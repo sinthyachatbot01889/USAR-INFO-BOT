@@ -1,5 +1,6 @@
-# file: infobot.py
+# file: infobot.py (Render.com-এর জন্য আপডেটেড)
 import logging
+import os # ⭐️ Render-এর জন্য এটি যোগ করা হয়েছে
 from telegram import Update, BotCommand
 from telegram.ext import (
     Application,
@@ -9,8 +10,9 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# --- ⭐️ আপনার নতুন বটের টোকেন ⭐️ ---
-TOKEN = "8525811604:AAF196R0Ex-KvV64aehDytMcB6_w0WNxYEc"
+# --- ⭐️ টোকেন এখন Render থেকে লোড হবে ---
+# কোডের ভেতর টোকেন নেই, এটি এখন সুরক্ষিত
+TOKEN = os.environ.get("TOKEN")
 
 # লগিং চালু করা
 logging.basicConfig(
@@ -42,7 +44,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"🤖 <b>My Bot ID:</b> <code>{bot_id}</code>\n\n"
     )
     
-    # যদি এটি গ্রুপে হয়, তবে গ্রুপের আইডি আলাদা করে বলে দেবে
     if chat.type in ['group', 'supergroup']:
         reply_text += (
             f"👥 <b>This Group ID is:</b> <code>{chat.id}</code>\n\n"
@@ -74,7 +75,6 @@ async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT
     """ফরোয়ার্ড করা মেসেজ থেকে আইডি বের করে।"""
     user = update.effective_user
     
-    # --- যদি কোনো ইউজার থেকে মেসেজ ফরোয়ার্ড করা হয় ---
     if update.message.forward_from:
         fwd_user = update.message.forward_from
         reply_text = (
@@ -87,7 +87,6 @@ async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT
             
         await update.message.reply_html(reply_text)
         
-    # --- যদি কোনো চ্যানেল থেকে মেসেজ ফরোয়ার্ড করা হয় ---
     elif update.message.forward_from_chat:
         fwd_chat = update.message.forward_from_chat
         reply_text = (
@@ -101,12 +100,16 @@ async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT
         await update.message.reply_html(reply_text)
         
     else:
-        # যদি ফরোয়ার্ড করা হয় কিন্তু ইউজার তার আইডি হাইড করে রাখে
         await update.message.reply_text("This user has hidden their account, so I cannot get their ID from a forwarded message.")
 
 # মূল ফাংশন
 def main() -> None:
     """বটটি চালু করে।"""
+    
+    if not TOKEN:
+        logger.error("FATAL ERROR: TOKEN environment variable is not set.")
+        return # টোকেন না পেলে বট চলবে না
+
     application = Application.builder().token(TOKEN).post_init(post_init).build()
 
     # কমান্ড হ্যান্ডলার
@@ -117,7 +120,6 @@ def main() -> None:
     application.add_handler(MessageHandler(filters.FORWARDED, handle_forwarded_message))
 
     print(f"🤖 Bot @usarbotinfo_bot is now running as an ID Bot...")
-    # বট চালানো শুরু করা
     application.run_polling()
 
 if __name__ == "__main__":
